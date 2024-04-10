@@ -4,8 +4,8 @@ A minimal Dash app for testing purposes. app.py source from https://dash.plotly.
 
 ## Deployment
 
-Internal Server: http://w0lxprconn01.worldbank.org:3939/
-External Server: https://datanalytics.worldbank.org/
+- Internal Server: http://w0lxprconn01.worldbank.org:3939/
+- External Server: https://datanalytics.worldbank.org/
 
 Ensure you have an RStudio Connect account, if not [request here](https://worldbankgroup.service-now.com/wbg?id=ticket&table=sc_req_item&sys_id=fbb93028476502d09169d03fe16d4309). Upon account provisioning, generate API key(s) on the target server's UI.
 
@@ -15,7 +15,7 @@ Check which python version is supported by the server with:
 rsconnect content search --server [server URL] --api-key [your API key] | jq -c '.[] | {py_version}' | sort | uniq
 ```
 
-As of writing the internal server supports only 3.8.14 so that's the version we are going to use for building & deploying the dash app. If you are using `pyenv` this repo's python version has configured to use 3.8.14. If the target server uses a different version, feel free to switch using `pyenv local 3.x.x`.
+As of writing both the internal and external server supports 3.8.14 so that's the version we are going to use for building & deploying the dash app. If you are using `pyenv` this repo's python version has configured to use 3.8.14. If the target server uses a different version, feel free to switch using `pyenv local 3.x.x`.
 
 To verify the app works locally:
 
