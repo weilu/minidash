@@ -69,6 +69,8 @@ def render_page_content(pathname):
     elif pathname == "/availability":
         df = get_available_data()
 
+        df.columns = df.columns.str.replace('_', ' ').str.title()
+
         table = dash_table.DataTable(
             df.to_dict('records'),
             [{"name": i, "id": i} for i in df.columns],
@@ -77,7 +79,17 @@ def render_page_content(pathname):
             page_size=200,
             style_table={'overflowX': 'auto'},  # Scrollable table
             style_cell={'textAlign': 'left'},
-            style_header={'fontWeight': 'bold'}
+            style_header={
+                'fontWeight': 'bold',
+                'whiteSpace': 'normal',
+                'height': 'auto',
+            },
+            style_data_conditional=[
+                {
+                    'if': {'row_index': 'odd'},
+                    'backgroundColor': '#2c3034',
+                },
+            ],
         )
 
         return dbc.Card(
