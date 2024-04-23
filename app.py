@@ -3,12 +3,22 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output
 import pandas as pd
+from dash.long_callback import DiskcacheLongCallbackManager
 
 from queries import get_available_data, get_gdp, get_country
 from plot import make_health_plot
 
+import diskcache
+cache = diskcache.Cache("./cache")
+long_callback_manager = DiskcacheLongCallbackManager(cache)
+
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.QUARTZ, dbc_css])
+app = dash.Dash(
+    __name__,
+    external_stylesheets=[dbc.themes.QUARTZ, dbc_css],
+    long_callback_manager=long_callback_manager,
+    suppress_callback_exceptions=True,
+)
 
 SIDEBAR_STYLE = {
     "position": "fixed",
@@ -63,8 +73,13 @@ def render_page_content(pathname):
                 dbc.Tabs(id='thematic-tabs', active_tab='tab-education', children=[
                     dbc.Tab(label='Education', tab_id='tab-education'),
                     dbc.Tab(label='Health', tab_id='tab-health'),
+                ], style={"margin-bottom": "2rem"}),
+                html.Div(id='thematic-spinner', children=[
+                    dbc.Spinner(color="primary", spinner_style={
+                        "width": "3rem", "height": "3rem"
+                    }),
                 ]),
-                html.Div(id='thematic-content')
+                html.Div(id='thematic-content'),
             ])
         )
     elif pathname == "/availability":
@@ -111,8 +126,22 @@ def render_page_content(pathname):
     )
 
 
-@app.callback(Output('thematic-content', 'children'),
-              Input('thematic-tabs', 'active_tab'))
+@app.long_callback(
+    Output('thematic-content', 'children'),
+    Input('thematic-tabs', 'active_tab'),
+    running=[
+        (
+            Output("thematic-spinner", "style"),
+            {"display": "block"},
+            {"display": "none"},
+        ),
+        (
+            Output("thematic-content", "style"),
+            {"display": "none"},
+            {"display": "block"},
+        ),
+    ],
+)
 def render_thematic_content(tab):
     gdp = get_gdp()
     country = get_country()
@@ -122,7 +151,6 @@ def render_thematic_content(tab):
         ])
     elif tab == 'tab-health':
         return html.Div([
-            html.Hr(),
             dcc.Graph(figure=make_health_plot(gdp, country))
         ])
 
