@@ -4,7 +4,8 @@ from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output
 import pandas as pd
 
-from queries import get_available_data
+from queries import get_available_data, get_gdp, get_country
+from plot import make_health_plot
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.QUARTZ, dbc_css])
@@ -113,13 +114,16 @@ def render_page_content(pathname):
 @app.callback(Output('thematic-content', 'children'),
               Input('thematic-tabs', 'active_tab'))
 def render_thematic_content(tab):
+    gdp = get_gdp()
+    country = get_country()
     if tab == 'tab-education':
         return html.Div([
             html.H3('Education Content')
         ])
     elif tab == 'tab-health':
         return html.Div([
-            html.H3('Health Content')
+            html.Hr(),
+            dcc.Graph(figure=make_health_plot(gdp, country))
         ])
 
 if __name__ == '__main__':

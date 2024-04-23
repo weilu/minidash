@@ -3,3 +3,4 @@ dash-bootstrap-components
 pandas>=2.0
 rsconnect-python
 databricks-sql-connector
+scikit-learn
