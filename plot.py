@@ -95,7 +95,7 @@ def make_health_plot(gdp, country):
 
         outlier_countries['income_level_label'] = outlier_countries['income_level'].map(income_level_legend_map)
         outlier_countries['y_minus_fitted_y'] = outlier_countries.universal_health_coverage_index - outlier_countries.fitted_y
-        outlier_countries['link'] = '<a href="https://app.powerbi.com/groups/627247ef-7122-4351-95f1-86ecacb49b62/reports/c5e8859a-8737-44f5-b950-9be40608e76d/ReportSection?experience=power-bi">investigate</a>'
+        outlier_countries['link'] = '<a href="https://app.powerbi.com/groups/75fff923-5acd-443e-877b-d2c6e88cdb31/reports/a28af24a-6a8a-4241-bd42-40a4c4af5716/ReportSection?experience=power-bi">investigate</a>'
         outlier_countries.sort_values(by=['year', 'income_level_label', 'y_minus_fitted_y'], inplace=True)
         # color underformers red, overperformers green
         colors = np.where(outlier_countries.y_minus_fitted_y > 0, '#D8FFB1', '#FFCCCB')
