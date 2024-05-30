@@ -65,7 +65,23 @@ content = html.Div(dash.page_container,
     id="page-content", style=CONTENT_STYLE
 )
 
-app.layout = html.Div([sidebar, content])
+dummy_div = html.Div(id="div-for-redirect")
+
+app.layout = html.Div([dcc.Location(id='url', refresh=False),
+                       sidebar,
+                       content,
+                       dummy_div])
+
+@app.callback(
+    Output('div-for-redirect', 'children'),
+    Input('url', 'pathname')
+)
+def redirect_default(url_pathname):
+    known_paths = list(p['relative_path'] for p in dash.page_registry.values())
+    if url_pathname not in known_paths:
+        return dcc.Location(pathname=get_relative_path('home'), id="redirect-me")
+    else:
+        return ""
 
 
 @app.long_callback(
