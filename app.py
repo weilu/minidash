@@ -2,10 +2,8 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output
-import pandas as pd
 from dash.long_callback import DiskcacheLongCallbackManager
-
-from queries import get_available_data, get_gdp, get_country
+from queries import get_gdp, get_country, get_available_data
 from plot import make_health_plot
 
 import diskcache
@@ -18,6 +16,7 @@ app = dash.Dash(
     external_stylesheets=[dbc.themes.QUARTZ, dbc_css],
     long_callback_manager=long_callback_manager,
     suppress_callback_exceptions=True,
+    use_pages=True,
 )
 
 SIDEBAR_STYLE = {
@@ -30,16 +29,16 @@ SIDEBAR_STYLE = {
 }
 
 CONTENT_STYLE = {
-    "margin-left": "18rem",
-    "margin-right": "2rem",
+    "marginLeft": "18rem",
+    "marginRight": "2rem",
     "padding": "2rem 1rem",
 }
 
 sidebar = html.Div(
     [
         dbc.Row([
-            dbc.Col(html.Img(src=app.get_asset_url('rpf_logo.png'), style={'height': '50px', 'margin-left': '20px'}), width="auto"),
-            dbc.Col(html.H2("RPF", className="display-4", style={'color': 'white', 'margin-bottom': 0}), width="auto"),
+            dbc.Col(html.Img(src=app.get_asset_url('rpf_logo.png'), style={'height': '50px', 'marginLeft': '20px'}), width="auto"),
+            dbc.Col(html.H2("RPF", className="display-4", style={'color': 'white', 'marginBottom': 0}), width="auto"),
         ], align='center'),
         dbc.Row([
             dbc.Col(html.Small("Reimagining Public Finance", className="text-muted"), width="auto")
@@ -50,7 +49,7 @@ sidebar = html.Div(
             [
                 dbc.NavLink("Overview", href="/", active="exact"),
                 dbc.NavLink("Thematic Studies", href="/thematic", active="exact"),
-                dbc.NavLink("Data Availability", href="/availability", active="exact"),
+                dbc.NavLink("Data Availability", href="/availability", active="exact", id="avail-nav"),
             ],
             vertical=True,
             pills=True,
@@ -59,71 +58,11 @@ sidebar = html.Div(
     style=SIDEBAR_STYLE,
 )
 
-content = html.Div(id="page-content", style=CONTENT_STYLE)
+content = html.Div(dash.page_container,
+    id="page-content", style=CONTENT_STYLE
+)
 
-app.layout = html.Div([dcc.Location(id="url"), sidebar, content])
-
-@app.callback(Output("page-content", "children"), [Input("url", "pathname")])
-def render_page_content(pathname):
-    if pathname == "/":
-        return html.P("This is the content of the home page!")
-    elif pathname == "/thematic":
-        return dbc.Card(
-            dbc.CardBody([
-                dbc.Tabs(id='thematic-tabs', active_tab='tab-education', children=[
-                    dbc.Tab(label='Education', tab_id='tab-education'),
-                    dbc.Tab(label='Health', tab_id='tab-health'),
-                ], style={"margin-bottom": "2rem"}),
-                html.Div(id='thematic-spinner', children=[
-                    dbc.Spinner(color="primary", spinner_style={
-                        "width": "3rem", "height": "3rem"
-                    }),
-                ]),
-                html.Div(id='thematic-content'),
-            ])
-        )
-    elif pathname == "/availability":
-        df = get_available_data()
-
-        df.columns = df.columns.str.replace('_', ' ').str.title()
-
-        table = dash_table.DataTable(
-            df.to_dict('records'),
-            [{"name": i, "id": i} for i in df.columns],
-            filter_action="native",
-            sort_action="native",
-            page_size=200,
-            style_table={'overflowX': 'auto'},  # Scrollable table
-            style_cell={'textAlign': 'left'},
-            style_header={
-                'fontWeight': 'bold',
-                'whiteSpace': 'normal',
-                'height': 'auto',
-            },
-            style_data_conditional=[
-                {
-                    'if': {'row_index': 'odd'},
-                    'backgroundColor': '#2c3034',
-                },
-            ],
-        )
-
-        return dbc.Card(
-            dbc.CardBody([
-                html.Div([
-                    table
-                ],  className="dbc", **{"data-bs-theme": "dark"})
-            ])
-        )
-
-    return html.Div(
-        [
-            html.H1("404: Not found", className="text-danger"),
-            html.Hr(),
-            html.P(f"The pathname {pathname} was not recognised..."),
-        ],
-        className="p-3 bg-light rounded-3",
-    )
+app.layout = html.Div([sidebar, content])
 
 
 @app.long_callback(
@@ -153,6 +92,51 @@ def render_thematic_content(tab):
         return html.Div([
             dcc.Graph(figure=make_health_plot(gdp, country))
         ])
+
+
+@app.long_callback(
+    Output('availability-content', 'children'),
+    Input('avail-nav', 'active'),
+    running=[
+        (
+            Output("availability-spinner", "style"),
+            {"display": "block"},
+            {"display": "none"},
+        ),
+        (
+            Output("availability-content", "style"),
+            {"display": "none"},
+            {"display": "block"},
+        ),
+    ],
+)
+def render_availability_content(active):
+    df = get_available_data()
+    df.columns = df.columns.str.replace('_', ' ').str.title()
+
+    table = dash_table.DataTable(
+        df.to_dict('records'),
+        [{"name": i, "id": i} for i in df.columns],
+        filter_action="native",
+        sort_action="native",
+        page_size=200,
+        style_table={'overflowX': 'auto'},  # Scrollable table
+        style_cell={'textAlign': 'left'},
+        style_header={
+            'fontWeight': 'bold',
+            'whiteSpace': 'normal',
+            'height': 'auto',
+        },
+        style_data_conditional=[
+            {
+                'if': {'row_index': 'odd'},
+                'backgroundColor': '#2c3034',
+            },
+        ],
+    )
+
+    return table
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
