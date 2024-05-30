@@ -34,6 +34,9 @@ CONTENT_STYLE = {
     "padding": "2rem 1rem",
 }
 
+def get_relative_path(page_name):
+    return dash.page_registry[f'pages.{page_name}']['relative_path']
+
 sidebar = html.Div(
     [
         dbc.Row([
@@ -47,9 +50,9 @@ sidebar = html.Div(
         html.Hr(),
         dbc.Nav(
             [
-                dbc.NavLink("Overview", href="/", active="exact"),
-                dbc.NavLink("Thematic Studies", href="/thematic", active="exact"),
-                dbc.NavLink("Data Availability", href="/availability", active="exact", id="avail-nav"),
+                dbc.NavLink("Overview", href=get_relative_path('home'), active="exact"),
+                dbc.NavLink("Thematic Studies", href=get_relative_path('thematic'), active="exact"),
+                dbc.NavLink("Data Availability", href=get_relative_path('availability'), active="exact", id="avail-nav"),
             ],
             vertical=True,
             pills=True,
