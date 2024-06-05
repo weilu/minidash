@@ -40,12 +40,11 @@ def get_relative_path(page_name):
 sidebar = html.Div(
     [
         dbc.Row([
-            dbc.Col(html.Img(src=app.get_asset_url('rpf_logo.png'), style={'height': '50px', 'marginLeft': '20px'}), width="auto"),
-            dbc.Col(html.H2("RPF", className="display-4", style={'color': 'white', 'marginBottom': 0}), width="auto"),
-        ], align='center'),
-        dbc.Row([
-            dbc.Col(html.Small("Reimagining Public Finance", className="text-muted"), width="auto")
-        ], align='center'),
+            html.Img(
+                src=app.get_asset_url('rpf_logo.png'),
+                style={'height': '168'}
+            ),
+        ]),
 
         html.Hr(),
         dbc.Nav(
