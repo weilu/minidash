@@ -104,11 +104,11 @@ def render_thematic_content(tab):
     country = get_country()
     if tab == 'tab-education':
         return html.Div([
-            dcc.Graph(figure=make_edu_plot(gdp, country))
+            dcc.Graph(id='edu-plot', figure=make_edu_plot(gdp, country))
         ])
     elif tab == 'tab-health':
         return html.Div([
-            dcc.Graph(figure=make_health_plot(gdp, country))
+            dcc.Graph(id='health-plot', figure=make_health_plot(gdp, country))
         ])
 
 @app.long_callback(

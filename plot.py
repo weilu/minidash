@@ -25,26 +25,25 @@ def make_plot(dataset, gdp, country, yaxes_title, table_header_outcome, column_n
         outlier_countries = pd.DataFrame(columns=dataset.columns + ['fitted_y'])
         dataset_by_year = dataset[dataset["year"] == year]
         for level in income_level_legend_map.keys():
+            level_name = income_level_legend_map[level]
             dataset_by_year_level = dataset_by_year[
                 dataset_by_year["income_level"] == level].sort_values(by="gdp_per_capita_2017_ppp")
-            if dataset_by_year_level.empty:
-                continue
-            level_name = income_level_legend_map[level]
+
             x = dataset_by_year_level["gdp_per_capita_2017_ppp"]
             y = dataset_by_year_level[column_name]
             country_names = dataset_by_year_level['country_name']
 
-            # trendline
-            x_input = x.values.reshape(-1, 1)
-            model = LinearRegression()
-            # model = HuberRegressor()
-            # model = RANSACRegressor(residual_threshold=5)
-            fitted_y = model.fit(x_input, y.ravel()).predict(x_input)
-            residuals = y - fitted_y
-            std_residuals = np.abs(residuals / np.std(residuals))
-            outlier_mask = std_residuals > 2
-            # outlier_mask = model.outliers_
-            # outlier_mask = np.logical_not(model.inlier_mask_)
+            if not dataset_by_year_level.empty:
+                # trendline
+                x_input = x.values.reshape(-1, 1)
+                model = LinearRegression()
+                fitted_y = model.fit(x_input, y.ravel()).predict(x_input)
+                residuals = y - fitted_y
+                std_residuals = np.abs(residuals / np.std(residuals))
+                outlier_mask = std_residuals > 1.5
+            else:
+                fitted_y = y
+                outlier_mask = y != fitted_y
 
             data_dict = {
                 'y': list(fitted_y),
@@ -54,6 +53,7 @@ def make_plot(dataset, gdp, country, yaxes_title, table_header_outcome, column_n
                 'legendgroup': level_name,
                 'showlegend': False,
                 'hoverinfo': 'skip',
+                'opacity': 0.5,
             }
             graphs.append(go.Scatter(**data_dict))
 
@@ -99,25 +99,19 @@ def make_plot(dataset, gdp, country, yaxes_title, table_header_outcome, column_n
         outlier_countries.sort_values(by=['year', 'income_level_label', 'y_minus_fitted_y'], inplace=True)
         # color underformers red, overperformers green
         colors = np.where(outlier_countries.y_minus_fitted_y > 0, '#D8FFB1', '#FFCCCB')
-        t = go.Table(
-            header=dict(values=table_headers,
-                            fill = dict(color='#C2D4FF'),
+
+        if outlier_countries.shape[0] > 0:
+            t = go.Table(
+                header=dict(values=table_headers,
+                                fill = dict(color='#C2D4FF'),
+                                align = ['left'] * 5),
+                cells=dict(values=[outlier_countries[col] for col in table_cols],
+                            fill = dict(color=[colors for col in table_cols]),
                             align = ['left'] * 5),
-            cells=dict(values=[outlier_countries[col] for col in table_cols],
-                        fill = dict(color=[colors for col in table_cols]),
-                        align = ['left'] * 5),
-            )    
+                )
+        else:
+            t = go.Table(header=dict(values=[f'No outlier country detected for {year}']))
 
-        # Filter table data on point selection
-        def selection_fn(trace, points, selector):
-            print("==========> selected")
-            print(inds = points.point_inds)
-            # t.cells.values = [df.loc[points.point_inds][col] for col in ['ID','Classification','Driveline','Hybrid']]
-        graphs[-1].on_selection(selection_fn) # graphs[-1] is the outlier scatter
-
-        def on_click():
-            print("==========> clicked")
-        graphs[-1].on_click(on_click)
 
         return graphs, t, outlier_countries
 
@@ -134,13 +128,13 @@ def make_plot(dataset, gdp, country, yaxes_title, table_header_outcome, column_n
     )
 
     graphs, t, _ = build_graph_and_table(latest_year)
+    num_scatters = len(graphs)
     fig.add_traces(graphs, rows=1, cols=1)
     fig.add_trace(t, row=2, col=1)
 
     fig.update_layout(height=800)
     fig.update_xaxes(range=[-50, max_exp + 100], title="Per Capital GDP (2017 PPP)")
     fig.update_yaxes(range=[0, 1], title=yaxes_title)
-    # fig_dict["layout"]["hovermode"] = "closest"
     updatemenus = [{
             "buttons": [
                 {
@@ -187,10 +181,13 @@ def make_plot(dataset, gdp, country, yaxes_title, table_header_outcome, column_n
     }
 
     frames = []
-    all_outliers = []
     for year in years:
         graphs, t, outliers = build_graph_and_table(year)
-        all_outliers.append(outliers)
+
+        # each frame must have the same number of traces, otherwise annimation may fail with out-of-index error
+        assert len(graphs) == num_scatters, f'Expect the number of scatter traces ({num_scatters}) to be the same across years but got {len(graphs)} for {year}'
+        assert t is not None, 'Expect outlier table to be present'
+
         frame = {
             "data": graphs + [t],
             "name": year,
