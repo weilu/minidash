@@ -38,6 +38,7 @@ def get_gdp():
 def get_country():
     return execute_query("SELECT * FROM indicator.country")
 
+
 def get_health_data(gdp, country):
     health_indicator = execute_query("SELECT * FROM indicator.universal_health_coverage_index_gho")
     merged = pd.merge(gdp, health_indicator, on=['country_code', 'year'], how='inner')
@@ -47,11 +48,18 @@ def get_health_data(gdp, country):
     df['universal_health_coverage_index'] = df['universal_health_coverage_index']/100
     return df
 
+
 def get_edu_data(gdp, country):
     edu_indicator = execute_query("SELECT * FROM indicator.learning_poverty_rate")
     merged = pd.merge(gdp, edu_indicator, on=['country_code', 'year'], how='inner')
     merged = merged[merged.gdp_per_capita_2017_ppp.notnull() & merged.learning_poverty_rate.notnull()]
     df = pd.merge(merged, country, on=['country_code'], how='inner')
     df = df[df.income_level != 'INX']
-    return df
+
+    # some years have very few countries' data available, drop them
+    country_counts = df.groupby('year')['country_code'].nunique()
+    comparable_years = country_counts[country_counts >= 45].index
+    df_filtered = df[df['year'].isin(comparable_years)]
+
+    return df_filtered
 
