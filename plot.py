@@ -7,31 +7,31 @@ from sklearn.linear_model import LinearRegression, RANSACRegressor, HuberRegress
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import Pipeline
 from plotly.subplots import make_subplots
-from queries import get_health_data
+from queries import get_health_data, get_edu_data
 
 
-
-def make_health_plot(gdp, country):
-    dataset = get_health_data(gdp, country)
+def make_plot(dataset, gdp, country, yaxes_title, table_header_outcome, column_name):
     earliest_year = dataset.year.min() 
     latest_year = dataset.year.max()
     years = sorted(dataset.year.unique().tolist())
     max_exp = dataset.gdp_per_capita_2017_ppp.max()
     color_map = {'LIC': 'red', 'LMC': 'orange', 'UMC': 'purple', 'HIC': 'blue'}
     income_level_legend_map = {'LIC': '1. Low Income', 'LMC': '2. Lower Middle', 'UMC': '3. Upper Middle', 'HIC': '4. High Income'}
-    table_cols = ['year', 'income_level_label', 'country_name', 'gdp_per_capita_2017_ppp', 'universal_health_coverage_index', 'link']
-    table_headers = ['Year', 'Income Level', 'Country', 'Per Capita GDP (2017 PPP)', 'Universal Health Coverage Index', 'Link']
+    table_cols = ['year', 'income_level_label', 'country_name', 'gdp_per_capita_2017_ppp', column_name, 'link']
+    table_headers = ['Year', 'Income Level', 'Country', 'Per Capita GDP (2017 PPP)', table_header_outcome, 'Link']
 
     def build_graph_and_table(year):
         graphs = []
         outlier_countries = pd.DataFrame(columns=dataset.columns + ['fitted_y'])
+        dataset_by_year = dataset[dataset["year"] == year]
         for level in income_level_legend_map.keys():
-            dataset_by_year = dataset[dataset["year"] == year]
             dataset_by_year_level = dataset_by_year[
                 dataset_by_year["income_level"] == level].sort_values(by="gdp_per_capita_2017_ppp")
+            if dataset_by_year_level.empty:
+                continue
             level_name = income_level_legend_map[level]
             x = dataset_by_year_level["gdp_per_capita_2017_ppp"]
-            y = dataset_by_year_level["universal_health_coverage_index"]
+            y = dataset_by_year_level[column_name]
             country_names = dataset_by_year_level['country_name']
 
             # trendline
@@ -94,7 +94,7 @@ def make_health_plot(gdp, country):
             outlier_countries = pd.concat([outlier_countries, dataset_by_year_level[outlier_mask]], ignore_index=True)
 
         outlier_countries['income_level_label'] = outlier_countries['income_level'].map(income_level_legend_map)
-        outlier_countries['y_minus_fitted_y'] = outlier_countries.universal_health_coverage_index - outlier_countries.fitted_y
+        outlier_countries['y_minus_fitted_y'] = outlier_countries[column_name] - outlier_countries.fitted_y
         outlier_countries['link'] = '<a href="https://app.powerbi.com/groups/75fff923-5acd-443e-877b-d2c6e88cdb31/reports/a28af24a-6a8a-4241-bd42-40a4c4af5716/ReportSection?experience=power-bi">investigate</a>'
         outlier_countries.sort_values(by=['year', 'income_level_label', 'y_minus_fitted_y'], inplace=True)
         # color underformers red, overperformers green
@@ -139,7 +139,7 @@ def make_health_plot(gdp, country):
 
     fig.update_layout(height=800)
     fig.update_xaxes(range=[-50, max_exp + 100], title="Per Capital GDP (2017 PPP)")
-    fig.update_yaxes(range=[0, 100], title="Universal Health Coverage")
+    fig.update_yaxes(range=[0, 1], title=yaxes_title)
     # fig_dict["layout"]["hovermode"] = "closest"
     updatemenus = [{
             "buttons": [
@@ -213,3 +213,11 @@ def make_health_plot(gdp, country):
                       sliders=[sliders_dict])
     return fig
 
+
+def make_health_plot(gdp, country):
+    dataset = get_health_data(gdp, country)
+    return make_plot(dataset, gdp, country, 'Universal Health Coverage', 'Universal Health Coverage Index', 'universal_health_coverage_index')
+
+def make_edu_plot(gdp, country):
+    dataset = get_edu_data(gdp, country)
+    return make_plot(dataset, gdp, country, 'Learning Poverty Rate', 'Learning Poverty Rate', 'learning_poverty_rate')

@@ -44,5 +44,14 @@ def get_health_data(gdp, country):
     merged = merged[merged.gdp_per_capita_2017_ppp.notnull() & merged.universal_health_coverage_index.notnull()]
     df = pd.merge(merged, country, on=['country_code'], how='inner')
     df = df[df.income_level != 'INX']
+    df['universal_health_coverage_index'] = df['universal_health_coverage_index']/100
+    return df
+
+def get_edu_data(gdp, country):
+    edu_indicator = execute_query("SELECT * FROM indicator.learning_poverty_rate")
+    merged = pd.merge(gdp, edu_indicator, on=['country_code', 'year'], how='inner')
+    merged = merged[merged.gdp_per_capita_2017_ppp.notnull() & merged.learning_poverty_rate.notnull()]
+    df = pd.merge(merged, country, on=['country_code'], how='inner')
+    df = df[df.income_level != 'INX']
     return df
 

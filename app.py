@@ -4,7 +4,7 @@ from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output
 from dash.long_callback import DiskcacheLongCallbackManager
 from queries import get_gdp, get_country, get_available_data
-from plot import make_health_plot
+from plot import make_health_plot, make_edu_plot
 
 import diskcache
 cache = diskcache.Cache("./cache")
@@ -104,13 +104,12 @@ def render_thematic_content(tab):
     country = get_country()
     if tab == 'tab-education':
         return html.Div([
-            html.H3('Education Content')
+            dcc.Graph(figure=make_edu_plot(gdp, country))
         ])
     elif tab == 'tab-health':
         return html.Div([
             dcc.Graph(figure=make_health_plot(gdp, country))
         ])
-
 
 @app.long_callback(
     Output('availability-content', 'children'),
