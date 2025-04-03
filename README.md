@@ -1,6 +1,6 @@
-# minidash
+# RPF Landing Dashboard
 
-A minimal Dash app for testing purposes. app.py source from https://dash.plotly.com/minimal-app
+This is a dash app that contains a landing page and an overview dashboard used as an entry point for the country-specific Re-imagining Public Finance (RPF) dashboard.
 
 ## Development
 
